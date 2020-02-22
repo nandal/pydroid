@@ -18,24 +18,33 @@ class Cache(object):
     currentUIDumpText = ""
     
 
-class SingleTon(object):
-    adbExe = "adb" #"C:\\Users\\nandal-pc\\git\\testdroid\\utils\\adb.exe"
-    deviceId = None # "YT91158119"
-    testCaseClass = None
-    tempDataDir = "{}/temp".format(Path.home())
-    result_dir = "{}/result_dir".format(Path.home())
-    resultFilePath = result_dir+"/result"
-
 
 class Adb(object):
     
-    def __init__(self, adbExe="adb", deviceId=None):
+    def __init__(self, adbExe="adb", deviceId=None, tempDataDir=None, resultDir=None, resultFilePath=None):
         self.adbExe = adbExe
         self.deviceId = deviceId
-        if not os.path.exists(SingleTon.tempDataDir):
-            os.mkdir(SingleTon.tempDataDir)
-        if not os.path.exists(SingleTon.result_dir):
-            os.mkdir(SingleTon.result_dir)
+        self.homeDir = str(Path.home())
+        
+        if not tempDataDir:
+            self.tempDataDir = self.homeDir+"/temp"
+        else:
+            self.tempDataDir = tempDataDir
+        if not resultDir:
+            self.resultDir = self.homeDir+"/result"
+        else:
+            self.resultDir = resultDir
+            
+        if not resultFilePath:
+            self.resultFilePath = self.resultDir+"/result.txt"
+        else:
+            self.resultFilePath = resultFilePath
+        
+        if not os.path.exists(self.tempDataDir):
+            os.mkdir(self.tempDataDir)
+        if not os.path.exists(self.resultDir):
+            os.mkdir(self.resultDir)
+
 
     def cmdShell(self, cmd):
         print("CMD\t"+ ' '.join(cmd))
@@ -46,7 +55,60 @@ class Adb(object):
         out, err = p.communicate()
         print("OUT\t{}".format(out))
         print("ERR\t{}".format(err))
-        return out, err
+        return out.decode("utf-8"), err.decode("utf-8")
+    
+    
+    def devices(self):
+        print("1")
+        result = {}
+        cmd = ["adb", "devices"]
+        print("CMD\t"+ " ".join(cmd))
+        if os.name == 'nt':
+            p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)            
+        else:
+            p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False)
+        out, err = p.communicate()
+        print("OUT\t{}".format(out))
+        print("ERR\t{}".format(err))
+        if not err and out:
+            output = out.decode("utf-8")
+            devices_lines = output.split("\n")
+            for device_line in devices_lines[1:]:
+                values = device_line.split()
+                if len(values) == 2:
+                    result[values[0].strip()] = values[1].strip()
+                
+        print("OUT\t{}".format(out))
+        print("ERR\t{}".format(err))
+        return result
+    
+    
+    def getprop(self):
+        print("1")
+        result = {}
+        
+        if self.deviceId:
+            output, err = self.cmdShell([self.adbExe, "-s",self.deviceId, "shell", "getprop"])
+        else:
+            output, err = self.cmdShell([self.adbExe, "shell", "getprop"])
+            
+        if not err and output:
+            output_lines = output.split("\n")
+            for line in output_lines:
+                values = line.split(":")
+                if len(values) == 2:
+                    key = values[0].strip().replace("[","").replace("]", "")
+                    value = values[1].strip().replace("[","").replace("]", "")
+                    result[key.strip()] = value.strip()
+                
+        print("OUT\t{}".format(output))
+        print("ERR\t{}".format(err))
+        return result
+    
+    
+    
+    
+    
     
     def shell(self, cmd):
         if self.deviceId:
@@ -131,7 +193,7 @@ class Adb(object):
             self.cmdShell([self.adbExe, "shell", "input", "tap", str(x),str(y)])
         
         if refreshDump:
-            localDumpFilePath = SingleTon.tempDataDir+"/localDumpFile_"+str(os.getpid())+".xml"
+            localDumpFilePath = self.tempDataDir+"/localDumpFile_"+str(os.getpid())+".xml"
             deviceDumpFilePath = "/sdcard/uidump_"+str(os.getpid())+".xml"
             self.uidump(deviceDumpFilePath)
             self.pull(deviceDumpFilePath, localDumpFilePath)
@@ -147,7 +209,7 @@ class Adb(object):
             self.cmdShell([self.adbExe, "shell", "input", "touchscreen", "swipe", str(x),str(y), str(x),str(y), str(time_in_seconds*1000)])
         
         if refreshDump:
-            localDumpFilePath = SingleTon.tempDataDir+"/localDumpFile_"+str(os.getpid())+".xml"
+            localDumpFilePath = self.tempDataDir+"/localDumpFile_"+str(os.getpid())+".xml"
             deviceDumpFilePath = "/sdcard/uidump_"+str(os.getpid())+".xml"
             self.uidump(deviceDumpFilePath)
             self.pull(deviceDumpFilePath, localDumpFilePath)
@@ -162,7 +224,7 @@ class Adb(object):
         else:
             self.cmdShell([self.adbExe, "shell", "input", "swipe", str(x1), str(y1), str(x2), str(y2)])
             
-        localDumpFilePath = SingleTon.tempDataDir+"/localDumpFile_"+str(os.getpid())+".xml"
+        localDumpFilePath = self.tempDataDir+"/localDumpFile_"+str(os.getpid())+".xml"
         deviceDumpFilePath = "/sdcard/uidump_"+str(os.getpid())+".xml"
         self.uidump(deviceDumpFilePath)
         self.pull(deviceDumpFilePath, localDumpFilePath)
@@ -185,7 +247,7 @@ class Adb(object):
         else:
             self.cmdShell([self.adbExe, "shell", "input", "keyevent", "4"])
             
-        localDumpFilePath = SingleTon.tempDataDir+"/localDumpFile_"+str(os.getpid())+".xml"
+        localDumpFilePath = self.tempDataDir+"/localDumpFile_"+str(os.getpid())+".xml"
         deviceDumpFilePath = "/sdcard/uidump_"+str(os.getpid())+".xml"
         self.uidump(deviceDumpFilePath)
         self.pull(deviceDumpFilePath, localDumpFilePath)
@@ -200,7 +262,7 @@ class Adb(object):
         else:
             self.cmdShell([self.adbExe, "shell", "input", "keyevent", "3"])
             
-        localDumpFilePath = SingleTon.tempDataDir+"/localDumpFile_"+str(os.getpid())+".xml"
+        localDumpFilePath = self.tempDataDir+"/localDumpFile_"+str(os.getpid())+".xml"
         deviceDumpFilePath = "/sdcard/uidump_"+str(os.getpid())+".xml"
         self.uidump(deviceDumpFilePath)
         self.pull(deviceDumpFilePath, localDumpFilePath)
@@ -229,7 +291,7 @@ class Adb(object):
             self.cmdShell([self.adbExe, "shell", "am", "start", "-n", packageAndActivity])
         
         if refreshDump:
-            localDumpFilePath = SingleTon.tempDataDir+"/localDumpFile_"+str(os.getpid())+".xml"
+            localDumpFilePath = self.tempDataDir+"/localDumpFile_"+str(os.getpid())+".xml"
             deviceDumpFilePath = "/sdcard/uidump_"+str(os.getpid())+".xml"
             self.uidump(deviceDumpFilePath)
             self.pull(deviceDumpFilePath, localDumpFilePath)
@@ -260,10 +322,31 @@ class Element(object):
     classdocs
     '''
     
-    def __init__(self, xmlString=None, parent=None, deviceId=None, adbExe="adb"):
+    def __init__(self, xmlString=None, parent=None, deviceId=None, adbExe="adb", tempDataDir=None, resultDir=None, resultFilePath=None):
+
         '''
         Constructor
         '''
+        self.homeDir = str(Path.home())
+        if not tempDataDir:
+            self.tempDataDir = self.homeDir+"/temp"
+        else:
+            self.tempDataDir = tempDataDir
+        if not resultDir:
+            self.resultDir = self.homeDir+"/result"
+        else:
+            self.resultDir = resultDir
+            
+        if not resultFilePath:
+            self.resultFilePath = self.resultDir+"/result.txt"
+        else:
+            self.resultFilePath = resultFilePath
+        
+        if not os.path.exists(self.tempDataDir):
+            os.mkdir(self.tempDataDir)
+        if not os.path.exists(self.resultDir):
+            os.mkdir(self.resultDir)
+            
         self.keyboards = {}
         self.keyboards['en_qwerty_lower'] = {}
         self.keyboards['en_qwerty_upper'] = {}
@@ -287,7 +370,7 @@ class Element(object):
         self.deviceId = deviceId
         self.adb = Adb(adbExe=adbExe, deviceId=deviceId)
         if xmlString == None:
-            localDumpFilePath = SingleTon.tempDataDir+"/localDumpFile_"+str(os.getpid())+".xml"
+            localDumpFilePath = self.tempDataDir+"/localDumpFile_"+str(os.getpid())+".xml"
             deviceDumpFilePath = "/sdcard/uidump_"+str(os.getpid())+".xml"
             self.adb.uidump(deviceDumpFilePath)
             self.adb.pull(deviceDumpFilePath, localDumpFilePath)
@@ -333,7 +416,7 @@ class Element(object):
         self.deviceId = deviceId
         self.adb = Adb(adbExe, deviceId)
         if xmlString == None:
-            localDumpFilePath = SingleTon.tempDataDir+"/localDumpFile_"+str(os.getpid())+".xml"
+            localDumpFilePath = self.tempDataDir+"/localDumpFile_"+str(os.getpid())+".xml"
             deviceDumpFilePath = "/sdcard/uidump_"+str(os.getpid())+".xml"
             self.adb.uidump(deviceDumpFilePath)
             self.adb.pull(deviceDumpFilePath, localDumpFilePath)

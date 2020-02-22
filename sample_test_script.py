@@ -8,7 +8,6 @@ Created on Sep 12, 2017
 import sys, os
 from pathlib import Path
 from pydroid import pydroid
-from pydroid.pydroid import SingleTon
 from datetime import datetime
 import sys
 
@@ -19,23 +18,23 @@ if len(sys.argv) > 2:
 
 # Set Test Config Params in SingleTon File
 # Set Android Device Id - which we get using $ adb devices
-SingleTon.deviceId =deviceId
+deviceId =deviceId
 
 # Set adb executable full path
-SingleTon.adbExe = 'adb'
+adbExe = 'adb'
 
 # set dir which contains temp data during the test run
-SingleTon.tempDataDir = "{}/temp".format(Path.home())
+tempDataDir = "{}/temp".format(Path.home())
 # set dir for dumps, screenshots n other results during test run
-SingleTon.result_dir = "{}/result_dir".format(Path.home())
+resultDir = "{}/result_dir".format(Path.home())
 # set file path for results logs
-SingleTon.resultFilePath = SingleTon.result_dir+"/result_"+datetime.now().strftime('%Y_%m_%d_%H_%M_%S')+".txt"
+resultFilePath = resultDir+"/result_"+datetime.now().strftime('%Y_%m_%d_%H_%M_%S')+".txt"
 
         
-print("Running Tests for : ", SingleTon.deviceId, SingleTon.adbExe, SingleTon.resultFilePath)
+print("Running Tests for : ", deviceId, adbExe, resultFilePath)
         
 # Create an instance of Android Device
-device = pydroid.Element(deviceId=SingleTon.deviceId)
+device = pydroid.Element(deviceId=deviceId, adbExe=adbExe, tempDataDir=tempDataDir,resultDir=resultDir,resultFilePath=resultFilePath)
 
 # go to home
 device.home()
