@@ -1,7 +1,7 @@
 '''
 Created on May 31, 2017
 
-@author: nandal-pc
+@author: Nandal
 '''
 import subprocess
 from datetime import datetime
@@ -14,12 +14,140 @@ from pathlib import Path
 
 
 class Cache(object):
+    """
+    A class used internally by pydroid as cache
+
+    ...
+
+    Attributes
+    ----------
+    previousUIDumpText : str
+        xml dump of screen in conditions before passing any event or action
+        
+    currentUIDumpText : str
+        xml dump of screen after the applying any event or action.
+        
+    """
     previousUIDumpText = ""
     currentUIDumpText = ""
     
 
 
 class Adb(object):
+    """
+    A class used to represent Python ADB Client for Android Devices
+
+    ...
+
+    Attributes
+    ----------
+    adbExe : str
+        a string containing full path for adb executable utility.
+    deviceId : str
+        android device id, which we get using adb devices command. it represents android device uniquely
+    tempDataDir : str
+        a string representing the full path for the folder which can be used by pydroid to store temp files
+    resultDir : str
+        a string representing the full path for the folder which can be used by pydroid to store result files
+    resultFilePath : str
+        a string representing the full path for the file which contains the result logs
+
+    Methods
+    -------
+    cmdShell(cmd=[])
+        Executes any command in terminal and returns the output,error as tupple
+        
+    devices()
+        Returns a dictionary of connected android devices. key:deviceId and value:status
+        
+    kill_server()
+        Function to kill ADB Server
+        
+    start_server()
+        Function to start ADB Server
+        
+    restart_server()
+        Function to restart ADB Server
+        
+    getprop()
+        Function returns a dictionary containing all details about the device connected. It returns a dictionary key:propertyKey and value:propertyValue
+        
+    shell(cmd=[])
+        Function which run a command in shell of connected Android Device and returns a tupple of output,error
+        
+    uninstall_all_user_apps()
+        Function to uninstall all installed apps in user space
+        
+    reboot()
+        Function to reboot connected android device
+        
+    pull(remote, local)
+        Function to fetch a file from device to local machine. remote is the path of file in android device and local is the path in local machine 
+        
+    push(remote, local)
+        Function to send a file to device from local machine. remote is the path of file in android device and local is the path in local machine 
+        
+    version()
+        Function to return version of ADB Tool as string
+        
+    
+    screencap(filename)
+        Function to capture the screenshot of android device and save it as a PNG file locally
+            
+    install(apkFilepath)
+        Function to install an APK on android device
+            
+    uidump(filename=None)
+        Function to take uidump on device for all the vies on screen
+        
+    
+            
+    get_screencap(filepath)
+        Function to take screenshot and save it locally on machine
+    
+            
+    get_logs(filepath)
+        Function to get logs from android device and save in a file locally.
+        
+                
+    get_uidump(filepath)
+        Function to get view elements xml dump of android foreground activity and save it in a local file
+        
+    
+    
+    click(x,y,refreshDump=False)
+        Function to click on X and Y coordinates of android screen.
+            
+        
+    long_press(x,y,time_in_seconds=2, refreshDump=False)
+        Function to long press on android device on given X and Y coordinates and a default delay of 2 seconds
+        
+        
+    swipe(x1, y1, x2, y2, refreshDump=False)
+        Function to swipe on android device from x1, y1 point towards x2,y2 point
+        
+    
+    inputText(text)
+        Function to write down text on selected view of android device
+        
+    
+    back(refreshDump=False)
+        Function to press Back Key of android device
+        
+
+    home(refreshDump=False)
+        Function to press Home Key of android device
+            
+        
+    screensize()
+        Function to return {'width':int, 'height':int} screensize of device
+            
+    
+    startApp(packageAndActivity,refreshDump=False)
+        Function to start an App on Android Device using packageName and Start Activity
+        
+
+    """
     
     def __init__(self, adbExe="adb", deviceId=None, tempDataDir=None, resultDir=None, resultFilePath=None):
         self.adbExe = adbExe
@@ -338,11 +466,96 @@ class Adb(object):
         inputText = inputText.replace('`','\`')
         return inputText
     
+    
 
 class Element(object):
-    '''
-    classdocs
-    '''
+    
+    """
+    A class used to represent Android Devices and Any Specific View on the Screen
+
+    ...
+
+    Attributes
+    ----------
+    xmlString : str
+        a string containing xml dump of the screen view elements.
+    parent: Element
+        an Element object represents parent of the current view element. 
+    adbExe : str
+        a string containing full path for adb executable utility.
+    deviceId : str
+        android device id, which we get using adb devices command. it represents android device uniquely
+    tempDataDir : str
+        a string representing the full path for the folder which can be used by pydroid to store temp files
+    resultDir : str
+        a string representing the full path for the folder which can be used by pydroid to store result files
+    resultFilePath : str
+        a string representing the full path for the file which contains the result logs
+
+    Methods
+    -------
+        
+    configureEnglishQwertyLowerKeys(refreshDump=True)
+        Function to configure the keyboard elements of the current screen and put their values in keyboard dictionary
+        
+        
+    explicitWait(seconds)
+        Function to halt execution of test script by the number of seconds
+        
+        
+    readEnglishQwertyLowerKeys(refreshDump=True)
+        Function to configure keyboard elements of current screen used internally by configureEnglishLowerKeys() Function
+        
+        
+    click(refreshDump=False)
+        Function to click on current element
+    
+    long_press(refreshDump=False)
+        Function to long press on current element
+    
+    refresh()
+        Function to refresh current screen elements of android device in current object.
+    
+    typeTextByKeyboard(text)
+        Function to type a text on selected element using onscreen keyboard
+        
+        
+    swipe(direction="RIGHT")
+        Function to swipe on screen of android device. LEFT,RIGHT,UP,DOWN
+        
+    getParent()
+        Function to return parent element of current object
+    
+    inputText(text)
+        Function to input text string in selected view element on android device
+        
+    getText()
+        Function to return the text of current selected element of android device
+    
+    home()
+        Function to press home key on android device.
+        
+    back()
+        Function to press back key on android device.
+    
+    
+    getChild(value=0, attr=None)
+        Function to return view element which is child of current object.
+    
+    
+    getChildren(value=0, attr=None)
+        Function to return view elements as list which are child of current object as per criteria
+        
+    
+    getNode(value=0, attr=None)
+        Function to return view element from whole current screen of android device
+        
+    
+    getNodes(value=0, attr=None)
+        Function to return view elements as list from whole current screen which matches given attr as argument.
+        
+    
+    """
     
     def __init__(self, xmlString=None, parent=None, deviceId=None, adbExe="adb", tempDataDir=None, resultDir=None, resultFilePath=None):
 
