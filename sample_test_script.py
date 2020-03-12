@@ -11,7 +11,7 @@ from pydroid import pydroid
 from datetime import datetime
 import sys
 
-deviceId = "5c3d963935f0"
+deviceId = "bff0d3db"
 if len(sys.argv) > 2:
     deviceId = sys.argv[1].strip()
 
@@ -44,5 +44,8 @@ device.swipe("LEFT")
 
 # go to home
 device.home()
+
+# uninstall all user apps
+device.adb.uninstall_all_user_apps()
 
 

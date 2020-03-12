@@ -117,6 +117,15 @@ class Adb(object):
             self.cmdShell([self.adbExe,"shell", ' '.join(cmd)])
             
     
+    def uninstall_all_user_apps(self):
+        #pm list packages -3 | cut -d':' -f2 | tr '\r' ' ' | xargs -r -n1 -t adb uninstall
+        if self.deviceId:
+            self.cmdShell([self.adbExe, "-s",self.deviceId, "shell", "pm", "list", "packages", "-3", "|", "cut", "-d':'", "-f2", "|", "tr", "'\r'","' '", "|", "xargs", "-r", "-n1", "-t", self.adbExe, "uninstall"])
+        else:
+            self.cmdShell([self.adbExe, "shell", "pm", "list", "packages", "-3", "|", "cut", "-d':'", "-f2", "|", "tr", "'\r'","' '", "|", "xargs", "-r", "-n1", "-t", self.adbExe, "uninstall"])
+            
+        
+    
     def pull(self, remote, local):
         if self.deviceId:
             self.cmdShell([self.adbExe, "-s",self.deviceId, "pull", remote, local])
@@ -183,7 +192,20 @@ class Adb(object):
         temp_filename = '/sdcard/'+ i.strftime('%Y_%m_%d_%H_%M_%S'+'_view.xml')
         self.uidump(temp_filename)
         #time.sleep(3)
-        self.pull(temp_filename)
+        self.pull(temp_filename, filepath)
+        
+    def _refresh_dump(self):
+        device_adb_id = "device_adb_id"
+        if self.deviceId:
+            device_adb_id = self.deviceId
+            
+        localDumpFilePath = self.tempDataDir+"/localDumpFile_"+device_adb_id+"_"+str(os.getpid())+".xml"
+        deviceDumpFilePath = "/sdcard/uidump_"+device_adb_id+"_"+str(os.getpid())+".xml"
+        self.uidump(deviceDumpFilePath)
+        self.pull(deviceDumpFilePath, localDumpFilePath)
+        uiDumpString = open(localDumpFilePath, "r").read()
+        Cache.previousUIDumpText = Cache.currentUIDumpText
+        Cache.currentUIDumpText = uiDumpString
         
         
     def click(self, x,y,refreshDump=False):
@@ -193,13 +215,8 @@ class Adb(object):
             self.cmdShell([self.adbExe, "shell", "input", "tap", str(x),str(y)])
         
         if refreshDump:
-            localDumpFilePath = self.tempDataDir+"/localDumpFile_"+str(os.getpid())+".xml"
-            deviceDumpFilePath = "/sdcard/uidump_"+str(os.getpid())+".xml"
-            self.uidump(deviceDumpFilePath)
-            self.pull(deviceDumpFilePath, localDumpFilePath)
-            uiDumpString = open(localDumpFilePath, "r").read()
-            Cache.previousUIDumpText = Cache.currentUIDumpText
-            Cache.currentUIDumpText = uiDumpString
+            self._refresh_dump()
+            
         
     def long_press(self, x,y,time_in_seconds=2, refreshDump=False):
         #adb shell input touchscreen swipe 170 187 170 187 2000
@@ -209,29 +226,21 @@ class Adb(object):
             self.cmdShell([self.adbExe, "shell", "input", "touchscreen", "swipe", str(x),str(y), str(x),str(y), str(time_in_seconds*1000)])
         
         if refreshDump:
-            localDumpFilePath = self.tempDataDir+"/localDumpFile_"+str(os.getpid())+".xml"
-            deviceDumpFilePath = "/sdcard/uidump_"+str(os.getpid())+".xml"
-            self.uidump(deviceDumpFilePath)
-            self.pull(deviceDumpFilePath, localDumpFilePath)
-            uiDumpString = open(localDumpFilePath, "r").read()
-            Cache.previousUIDumpText = Cache.currentUIDumpText
-            Cache.currentUIDumpText = uiDumpString
+            self._refresh_dump()
+            
         
-    def swipe(self, x1, y1, x2, y2):
+    def swipe(self, x1, y1, x2, y2, refreshDump=False):
         #print 'swipe',x1, y1, x2, y2
         if self.deviceId:
             self.cmdShell([self.adbExe, "-s", self.deviceId, "shell", "input", "swipe", str(x1), str(y1), str(x2), str(y2)])
         else:
             self.cmdShell([self.adbExe, "shell", "input", "swipe", str(x1), str(y1), str(x2), str(y2)])
             
-        localDumpFilePath = self.tempDataDir+"/localDumpFile_"+str(os.getpid())+".xml"
-        deviceDumpFilePath = "/sdcard/uidump_"+str(os.getpid())+".xml"
-        self.uidump(deviceDumpFilePath)
-        self.pull(deviceDumpFilePath, localDumpFilePath)
-        uiDumpString = open(localDumpFilePath, "r").read()
-        Cache.previousUIDumpText = Cache.currentUIDumpText
-        Cache.currentUIDumpText = uiDumpString
         
+        if refreshDump:
+            self._refresh_dump()
+        
+    
     
     def inputText(self, text):
         text = self.escapeTextInput(text)
@@ -241,34 +250,27 @@ class Adb(object):
         else:
             self.cmdShell([self.adbExe, "shell", "input", "text", text])
     
-    def back(self):
+    def back(self, refreshDump=False):
         if self.deviceId:
             self.cmdShell([self.adbExe, "-s", self.deviceId, "shell", "input", "keyevent", "4"])
         else:
             self.cmdShell([self.adbExe, "shell", "input", "keyevent", "4"])
             
-        localDumpFilePath = self.tempDataDir+"/localDumpFile_"+str(os.getpid())+".xml"
-        deviceDumpFilePath = "/sdcard/uidump_"+str(os.getpid())+".xml"
-        self.uidump(deviceDumpFilePath)
-        self.pull(deviceDumpFilePath, localDumpFilePath)
-        uiDumpString = open(localDumpFilePath, "r").read()
-        Cache.previousUIDumpText = Cache.currentUIDumpText
-        Cache.currentUIDumpText = uiDumpString
+        
+        if refreshDump:
+            self._refresh_dump()
         
 
-    def home(self):
+    def home(self, refreshDump=False):
         if self.deviceId:
             self.cmdShell([self.adbExe, "-s", self.deviceId, "shell", "input", "keyevent", "3"])
         else:
             self.cmdShell([self.adbExe, "shell", "input", "keyevent", "3"])
             
-        localDumpFilePath = self.tempDataDir+"/localDumpFile_"+str(os.getpid())+".xml"
-        deviceDumpFilePath = "/sdcard/uidump_"+str(os.getpid())+".xml"
-        self.uidump(deviceDumpFilePath)
-        self.pull(deviceDumpFilePath, localDumpFilePath)
-        uiDumpString = open(localDumpFilePath, "r").read()
-        Cache.previousUIDumpText = Cache.currentUIDumpText
-        Cache.currentUIDumpText = uiDumpString
+        
+        if refreshDump:
+            self._refresh_dump()
+            
         
     def screensize(self):
         out = False
@@ -290,14 +292,10 @@ class Adb(object):
         else:
             self.cmdShell([self.adbExe, "shell", "am", "start", "-n", packageAndActivity])
         
+        
         if refreshDump:
-            localDumpFilePath = self.tempDataDir+"/localDumpFile_"+str(os.getpid())+".xml"
-            deviceDumpFilePath = "/sdcard/uidump_"+str(os.getpid())+".xml"
-            self.uidump(deviceDumpFilePath)
-            self.pull(deviceDumpFilePath, localDumpFilePath)
-            uiDumpString = open(localDumpFilePath, "r").read()
-            Cache.previousUIDumpText = Cache.currentUIDumpText
-            Cache.currentUIDumpText = uiDumpString
+            self._refresh_dump()
+            
             
     def escapeTextInput(self, inputText):
         inputText = inputText.replace('%','\%')
@@ -369,16 +367,12 @@ class Element(object):
         
         self.deviceId = deviceId
         self.adb = Adb(adbExe=adbExe, deviceId=deviceId)
-        if xmlString == None:
-            localDumpFilePath = self.tempDataDir+"/localDumpFile_"+str(os.getpid())+".xml"
-            deviceDumpFilePath = "/sdcard/uidump_"+str(os.getpid())+".xml"
-            self.adb.uidump(deviceDumpFilePath)
-            self.adb.pull(deviceDumpFilePath, localDumpFilePath)
-            xmlString = open(localDumpFilePath, "r").read()
-            Cache.currentUIDumpText = xmlString
+        
+        if not xmlString:
+            self._refresh_dump()
             
             
-        root = ET.fromstring(xmlString)
+        root = ET.fromstring(Cache.currentUIDumpText)
         if root.tag == "hierarchy":
             root = root.find("node")
         
@@ -409,22 +403,30 @@ class Element(object):
             self.parentElement = parent
             
     
+    def _refresh_dump(self):
+        device_adb_id = "device_adb_id"
+        if self.deviceId:
+            device_adb_id = self.deviceId
+            
+        localDumpFilePath = self.tempDataDir+"/localDumpFile_"+device_adb_id+"_"+str(os.getpid())+".xml"
+        deviceDumpFilePath = "/sdcard/uidump_"+device_adb_id+"_"+str(os.getpid())+".xml"
+        self.adb.uidump(deviceDumpFilePath)
+        self.adb.pull(deviceDumpFilePath, localDumpFilePath)
+        xmlString = open(localDumpFilePath, "r").read()
+        Cache.currentUIDumpText = xmlString
+        
+        
     def __reInit(self, xmlString=None, parent=None, deviceId=None, adbExe="adb"):
         '''
         Constructor
         '''
         self.deviceId = deviceId
         self.adb = Adb(adbExe, deviceId)
-        if xmlString == None:
-            localDumpFilePath = self.tempDataDir+"/localDumpFile_"+str(os.getpid())+".xml"
-            deviceDumpFilePath = "/sdcard/uidump_"+str(os.getpid())+".xml"
-            self.adb.uidump(deviceDumpFilePath)
-            self.adb.pull(deviceDumpFilePath, localDumpFilePath)
-            xmlString = open(localDumpFilePath, "r").read()
-            Cache.currentUIDumpText = xmlString
+        if not xmlString:
+            self._refresh_dump()
             
             
-        root = ET.fromstring(xmlString)
+        root = ET.fromstring(Cache.currentUIDumpText)
         if root.tag == "hierarchy":
             root = root.find("node")
         
