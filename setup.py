@@ -10,7 +10,7 @@ with open("README.md", "r", encoding="utf-8") as fd:
 
 setuptools.setup(
     name='pydroid',  
-    version='0.1.2',
+    version='0.1.3',
     scripts=['sample_test_script.py'],
     author="Sandeep Nandal",
     author_email="sandeep@nandal.in",

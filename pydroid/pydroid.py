@@ -82,6 +82,22 @@ class Adb(object):
         print("ERR\t{}".format(err))
         return result
     
+    def kill_server(self):
+        output, err = self.cmdShell([self.adbExe, "kill-server"])
+        print("OUT\t{}".format(output))
+        print("ERR\t{}".format(err))
+        
+    
+    def start_server(self):
+        output, err = self.cmdShell([self.adbExe, "start-server"])
+        print("OUT\t{}".format(output))
+        print("ERR\t{}".format(err))
+        
+    
+    def restart_server(self):
+        self.kill_server()
+        self.start_server()
+        
     
     def getprop(self):
         print("1")
@@ -123,6 +139,14 @@ class Adb(object):
             self.cmdShell([self.adbExe, "-s",self.deviceId, "shell", "pm", "list", "packages", "-3", "|", "cut", "-d':'", "-f2", "|", "tr", "'\r'","' '", "|", "xargs", "-r", "-n1", "-t", self.adbExe, "uninstall"])
         else:
             self.cmdShell([self.adbExe, "shell", "pm", "list", "packages", "-3", "|", "cut", "-d':'", "-f2", "|", "tr", "'\r'","' '", "|", "xargs", "-r", "-n1", "-t", self.adbExe, "uninstall"])
+            
+        
+    
+    def reboot(self):
+        if self.deviceId:
+            self.cmdShell([self.adbExe, "-s",self.deviceId, "reboot"])
+        else:
+            self.cmdShell([self.adbExe, "reboot"])
             
         
     
